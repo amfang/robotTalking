@@ -74,26 +74,6 @@ var IO = function(server) {
 
     });
 
-    function sendCONVRequest(req, contextIn, obj, callback) {
-      //
-      Api.sendRequest(req, contextIn, function (err, data) {
-        if (!err) {
-
-          arrAllContext[obj.username] = data.context;;
-          console.log("username: "+obj.username+" -- context data: "+JSON.stringify(data));
-
-          var handledRes = Api.preHandling(data);
-
-          //conversation返回结果进行TTS处理,然后调用下面encode并返回客户端
-          //获取Conversation返回结果
-          var outData = handledRes;
-
-          callback(null, outData);
-
-        }
-      });
-    }
-
     //监听用户退出
     socket.on('disconnect', function(){
       //将退出的用户从在线列表中删除
@@ -123,6 +103,24 @@ var IO = function(server) {
 
     //监听用户发布上传文件
     socket.on('private_message', function(from, obj){
+      //判断语音还是字符
+      if (obj.content.length < 300){
+
+        var data = obj.content;
+
+        //STT返回文字进行conversation处理 -- planning
+        var contextIn = arrAllContext[obj.username];
+        console.log("username: "+obj.username+" -- contextIn: "+JSON.stringify(contextIn));
+
+        sendApiRequest(data, contextIn, obj);
+
+      }else{
+        getTextFromSTT(from, obj);
+      }
+
+    });
+
+    function getTextFromSTT(from, obj) {
       /*
        * 接收到客户端传入信息obj, 进行处理decode -- developing
        */
@@ -139,9 +137,10 @@ var IO = function(server) {
           //Waston STT_module 上传wav并回调识别文字;
           STT_module.recognizeFile(fileName, function (err, data) {
 
+            console.log("STT back data: "+data);
             //获取STT返回文字
             data = data.substr(1, data.length - 2);
-            data = data.trim(); //replace(/\s+/g,"");
+            data = data.replace(/\s+/g,""); //trim(); //
             obj.content = data;
 
             var from = obj.username;
@@ -169,7 +168,29 @@ var IO = function(server) {
         }
       });
 
-    });
+    }
+
+    function sendCONVRequest(req, contextIn, obj, callback) {
+
+      //
+      Api.sendRequest(req, contextIn, function (err, data) {
+        if (!err) {
+
+          arrAllContext[obj.username] = data.context;
+          console.log("username: "+obj.username+" -- context data: "+JSON.stringify(data));
+
+          //conversation返回对话内容进行分析处理调用
+          var handledRes = Api.preHandling(data, obj.username);
+
+          //conversation返回结果进行TTS处理,然后调用下面encode并返回客户端
+          //获取Conversation返回结果
+          var outData = handledRes;
+
+          callback(null, outData);
+
+        }
+      });
+    }
 
     function sendApiRequest(req, contextIn, obj) {
       sendCONVRequest(req, contextIn, obj, function (err, outData) {

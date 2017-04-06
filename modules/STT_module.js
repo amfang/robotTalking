@@ -64,7 +64,7 @@ var STT_module = {
             model: 'zh-CN_BroadbandModel', //'en-US_BroadbandModel', //
             content_type: 'audio/wav',
             continuous: true,
-            'interim_results': true,
+            'interim_results': false,
             'max_alternatives': 3,
             'word_confidence': false,
             timestamps: false
@@ -79,6 +79,10 @@ var STT_module = {
         // and pipe out the transcription
         recognizeStream.pipe(fs.createWriteStream('transcription.txt'));
 
+        /*
+        这里为何没有发送文件去识别？
+         */
+
         // listen for 'data' events for just the final text
         // listen for 'results' events to get the raw JSON with interim results, timings, etc.
         recognizeStream.setEncoding('utf8'); // to get strings instead of Buffers from `data` events
@@ -87,12 +91,18 @@ var STT_module = {
             recognizeStream.on(eventName, console.log.bind(console, eventName));
         });*/
 
+        //recognizeStream.on('results', function(event) { onEvent('Results:', event); });
+
         recognizeStream.on('data', function (event) {
             onEvent('Data: ', event);
         });
 
+        recognizeStream.on('error', function(event) {
+            onEvent('Error:', event);
+        });
+
         function onEvent(name, event) {
-            console.log(name, JSON.stringify(event,null,2));
+            console.log("event: "+name, JSON.stringify(event,null,2));
             var data = JSON.stringify(event,null,2);
             callback(null, data);
         }

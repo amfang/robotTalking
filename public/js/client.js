@@ -30,6 +30,8 @@
 		submit:function(){
 			var content = d.getElementById("textInput").value;
 
+			//alert("check canRecord:"+canRecord);
+
 			if(content != ''){
 				var obj = {
 					userid: this.userid,
@@ -37,8 +39,20 @@
 					content: content
 				};
 				//alert("username: "+obj.username+" -- content: "+obj.content);
-				this.socket.emit('message', obj);
+				//change message to private_message
+				this.socket.emit('private_message',this.username, obj);
 				d.getElementById("textInput").value = '';
+
+				//update描述
+				var contentDiv = '<div>'+obj.content+'</div>';
+				var usernameDiv = '<span>'+obj.username+'</span>';
+
+				var section = d.createElement('section');
+				section.className = 'user';
+				section.innerHTML = contentDiv + usernameDiv;
+
+				this.msgObj.appendChild(section);
+				this.scrollToBottom();
 			}
 			return false;
 		},
@@ -195,7 +209,13 @@
 					var bloburl = URL.createObjectURL(blob); //
 					media.src = bloburl;
 					//var media = new Audio("data:audio/mp3;base64,"+base64Str); // HTML5直接播放base64 mp3
+					canRecord = false;
+					media.addEventListener('ended', function () {
+						//alert("end");
+						canRecord = true;
+					}, false);
 					media.play();  // online play music
+
 					//alert("saveAs done");
 				}
 

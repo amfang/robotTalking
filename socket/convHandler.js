@@ -1,6 +1,9 @@
+'use strict';
+
 // The Api module is designed to handle all interactions with the server
 
 var CONV_module = require('../modules/CONV_module');
+var DB = require('./database');
 
 var Api = (function() {
 
@@ -34,7 +37,7 @@ var Api = (function() {
   };
 
   //预处理
-  function preHandling(data) {
+  function preHandling(data, username) {
     /*
      * - 判断返回结果进行预处理 - call_retrieve_and_rank & intent === "off_topic"
      */
@@ -53,6 +56,10 @@ var Api = (function() {
 
         //return data;
       }
+
+      //处理对话内容，保存到mysql
+      //DB.insertData(username, '', '', JSON.stringify(data), '');
+      //DB.countData();
 
       console.log("responseHandler -- data: "+JSON.stringify(data));
       var primaryIntent = data.intents[0];
@@ -171,7 +178,7 @@ var Api = (function() {
          * - 判断返回结果进行预处理 - call_retrieve_and_rank & intent === "off_topic"
          */
         console.log("postConversationMessage -- http.responseText: "+JSON.stringify(data));
-        //Api.preHandling(data);
+        //data = Api.preHandling(data);
         callback(null, data);
       }
 

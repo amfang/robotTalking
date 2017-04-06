@@ -6,11 +6,17 @@ var emptyCount = 0;
 var voiceCount = 0;
 var recorder;
 var recording = false;
+var canRecord = false;
 var micOn = false;
 
 var AudioContext=AudioContext||webkitAudioContext;
 var context=new AudioContext;
 var audio = document.createElement("audio");
+//播放语音是不能录音
+audio.addEventListener('ended', function () {
+    canRecord = true;
+}, false);
+
 //调整兼容
 navigator.getUserMedia=
     navigator.getUserMedia||
@@ -39,6 +45,7 @@ onSuccess = function (e) {
     stopRecording = function () {
         if (recording) {
             stream.disconnect(), recording = false;
+            play.onclick();
         }
 
     };
@@ -77,6 +84,23 @@ onSuccess = function (e) {
     };
 }
 
+//录音对话模式
+talk.onclick = function () {
+
+    if(talk.value == "语音对话中") {
+        talk.value="语音对话";
+        canRecord = false;
+    }else if(talk.value == "语音对话"){
+        record.onclick();
+        talk.value="语音对话中";
+        canRecord = true;
+    }
+
+    var currMedia = document.getElementById('audio');
+
+    alert("currMedia status: "+currMedia.paused);
+};
+
 //录音/停止 按钮点击动作
 record.onclick=function(){
     //alert("record.onclick=function()");
@@ -104,6 +128,8 @@ play.onclick=function(){
     var blob = exportWAV();
     //alert("blob: "+blob+" -- blob.size: "+blob.size);
     audio.src = URL.createObjectURL(blob);
+
+    canRecord = false;
 
     audio.play();
     CHAT.wavUp(blob);
@@ -172,11 +198,19 @@ function visualize(stream) {
             var v = dataArray[i] / 128.0;
             var y = v * HEIGHT/2;
 
+            if(talk.value == "语音对话") {
+                canRecord = false;
+            }
+
             var vol = Math.abs(y - HEIGHT/2) / HEIGHT/2 * 1000;
             //alert("vol: "+vol);
-            if (vol > 10) {
+            if (vol > 40) {
                 voiceCount ++;
                 emptyCount = 0;
+
+                if (voiceCount > 5 && canRecord && record.value == "录音") {
+                    record.onclick();
+                }
 
                 if (voiceCount > 10 && !recording && record.value == "停止") {
                     //alert("start recording"+voiceCount);
